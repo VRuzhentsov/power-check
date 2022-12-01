@@ -1,5 +1,24 @@
 {
   "name": "raspberry",
   "version": "0.1.0",
-  "license": "MIT"
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.3"
+  },
+  "scripts": {
+    "run:server": "ts-node-esm server/index.ts",
+    "dev:pm2:linux": "pm2 startOrReload ./ecosystem.config.cjs",
+    "dev:pm2:windows": "pm2 start dev-yarn-cmd-windows.js -- run:server"
+  },
+  "engines": {
+    "node": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.10",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0"
+  }
 }
