@@ -1,17 +1,26 @@
 import {Injectable, OnApplicationBootstrap} from '@nestjs/common';
 import {networkInterfaces} from "os"
+import {InjectBot} from "nestjs-telegraf"
+import {Telegraf, Context as TelegrafContext} from "telegraf";
 
 @Injectable()
 export class WarmupServiceService implements OnApplicationBootstrap {
+    constructor(
+        @InjectBot() private bot: Telegraf<TelegrafContext>
+    ) {
+    }
 
     onApplicationBootstrap() {
         console.debug("[WarmupServiceService] onApplicationBootstrap", {});
 
-        const ifConfig = WarmupServiceService.getIfConfig();
-        WarmupServiceService.sendToTelegram(ifConfig);
+        const ifConfig = this.getIfConfig();
+        this.sendToTelegram({
+            device: process.env.DEVICE_NAME,
+            ...ifConfig
+        });
     }
 
-    static getIfConfig(): string {
+    getIfConfig(): object {
         const nets = networkInterfaces();
         type ResultType = { [r: string]: string[] }
         // const results = Object.create(null); // Or just '{}', an empty object
@@ -34,10 +43,13 @@ export class WarmupServiceService implements OnApplicationBootstrap {
         }
 
         console.debug("[WarmupServiceService] getIfConfig", {results});
-        return "";
+        return results;
     }
 
-    static sendToTelegram(data: string): void {
-        console.debug("[WarmupServiceService] sendToTelegram", {});
+    async sendToTelegram(data: object) {
+        console.debug("[WarmupServiceService] sendToTelegram", {data});
+        const chatId: string | undefined = process.env.TELEGRAM_CHAT_ID;
+        if(!chatId) return;
+        await this.bot.telegram.sendMessage(chatId || "", JSON.stringify(data), { disable_notification: true });
     }
 }
