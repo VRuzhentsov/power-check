@@ -47,6 +47,8 @@ export class PowerService {
     console.debug("[PowerService] check", {});
     const ifConfig = this.getIfConfig();
 
+    const macRegex = /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/;
+
     const dataSource: WifiSource = {
       device: process.env.DEVICE_NAME,
       lastOnline: new Date().toLocaleString(),
@@ -61,8 +63,8 @@ export class PowerService {
           console.error(error);
           return;
         }
-        dataSource.wifiNameSsid = currentConnections[0]?.bssid;
-        dataSource.mac = currentConnections[0]?.mode;
+        dataSource.wifiNameSsid = currentConnections[0]?.ssid + " | " + currentConnections[0]?.bssid;
+        dataSource.mac = currentConnections[0]?.mac + " | " + currentConnections[0]?.mode;
         dataSource.rest = currentConnections;
         console.debug("[PowerService] wifi getCurrentConnections", {
           currentConnections,
