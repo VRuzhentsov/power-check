@@ -8,9 +8,9 @@ export class WarmupService implements OnApplicationBootstrap {
     ) {
     }
 
-    onApplicationBootstrap() {
+    async onApplicationBootstrap() {
         console.debug("[WarmupServiceService] onApplicationBootstrap", {});
 
-        this.powerService.check(); // if it is used by cron, not sure, that it is needed on boot
+        await this.powerService.initCheck();
     }
 }

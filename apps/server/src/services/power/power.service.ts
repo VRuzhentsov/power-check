@@ -3,6 +3,15 @@ import {networkInterfaces} from "os";
 import {InjectBot} from "nestjs-telegraf";
 import {Telegraf} from "telegraf";
 import {Context as TelegrafContext} from "telegraf/typings/context.js";
+import WifiCore from 'node-wifi';
+
+type WifiSource = {
+    device: string | undefined,
+    lastOnline: string,
+    ip: string,
+    wifiNameSsid: string | undefined,
+    mac: string | undefined
+}
 
 @Injectable()
 export class PowerService {
@@ -10,24 +19,60 @@ export class PowerService {
 
     private lastMessage: {message_id: number, text: string};
 
-    private data: object;
+    private data: WifiSource;
+
+    private wifi = WifiCore;
 
     constructor(@InjectBot() private bot: Telegraf<TelegrafContext>) {
+        this.wifi.init({
+            iface: null
+        })
     }
+
+    async initCheck() {
+        await this.check();
+    }
+
+    private static dataParse(data: WifiSource): string {
+        return [
+            `Last online: ${data.lastOnline}`,
+            `Device: ${data.device}`,
+            `WIFI: ${data.wifiNameSsid}`,
+            `IP: ${data.ip}`
+        ].join("\n")
+    }
+
     async check() {
         console.debug("[PowerService] check", {});
         const ifConfig = this.getIfConfig();
 
+        const dataSource: WifiSource = {
+            device: process.env.DEVICE_NAME,
+            lastOnline: new Date().toLocaleString(),
+            ip: JSON.stringify(ifConfig),
+            wifiNameSsid: "",
+            mac: "",
+        }
+
+        await new Promise(resolve => {
+            this.wifi.getCurrentConnections((error, currentConnections) => {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+                dataSource.wifiNameSsid = currentConnections[0].bssid;
+                dataSource.mac = currentConnections[0].mode;
+                // console.debug("[PowerService] wifi getCurrentConnections", {currentConnections: currentConnections[0]})
+                resolve(true);
+            });
+        })
+
+        this.data = dataSource;
 
         if(this.lastMessage?.message_id) {
             await this.updateLastMessage(this.lastMessage.message_id);
         } else {
-            this.data = {
-                device: process.env.DEVICE_NAME,
-                ...ifConfig
-            }
             await this.sendToTelegram(this.data);
-
         }
     }
 
@@ -57,16 +102,17 @@ export class PowerService {
         return results;
     }
 
-    async sendToTelegram(data: object) {
+    async sendToTelegram(data: WifiSource) {
         if(!this.chatId) return;
-        const msg = await this.bot.telegram.sendMessage(this.chatId || "", JSON.stringify(data), {disable_notification: true});
+        const msg = await this.bot.telegram.sendMessage(this.chatId || "", PowerService.dataParse(data), {disable_notification: true});
         console.debug("[PowerService] sendToTelegram", {data});
         this.lastMessage = msg;
     }
 
     async updateLastMessage(messageId: number) {
         console.debug("[PowerService] updateLastMessage", {messageId});
-        if(JSON.stringify(this.data) === this.lastMessage.text) return;
-        await this.bot.telegram.editMessageText(this.chatId, this.lastMessage.message_id, undefined, JSON.stringify(this.data));
+        const text = PowerService.dataParse(this.data)
+        if(text === this.lastMessage.text) return;
+        await this.bot.telegram.editMessageText(this.chatId, this.lastMessage.message_id, undefined, text);
     }
 }

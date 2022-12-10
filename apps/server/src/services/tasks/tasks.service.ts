@@ -6,7 +6,7 @@ import {PowerService} from "../power/power.service";
 export class TasksService {
     constructor(@Inject(PowerService) private powerService: PowerService) {
     }
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_5_MINUTES)
     powerCheck() {
         console.debug("[TasksService] powerCheck")
         this.powerService.check();
