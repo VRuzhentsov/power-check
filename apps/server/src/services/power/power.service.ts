@@ -9,8 +9,9 @@ type WifiSource = {
   device: string | undefined;
   lastOnline: string;
   ip: string;
-  wifiNameSsid: string | undefined;
-  mac: string | undefined;
+  wifiNameSsid?: string;
+  mac?: string;
+  rest?: object;
 };
 
 @Injectable()
@@ -60,9 +61,12 @@ export class PowerService {
           console.error(error);
           return;
         }
-        dataSource.wifiNameSsid = currentConnections[0].bssid;
-        dataSource.mac = currentConnections[0].mode;
-        // console.debug("[PowerService] wifi getCurrentConnections", {currentConnections: currentConnections[0]})
+        dataSource.wifiNameSsid = currentConnections[0]?.bssid;
+        dataSource.mac = currentConnections[0]?.mode;
+        dataSource.rest = currentConnections;
+        console.debug("[PowerService] wifi getCurrentConnections", {
+          currentConnections,
+        });
         resolve(true);
       });
     });
