@@ -94,7 +94,7 @@ export class PowerService {
 
     this.data = dataSource;
 
-    if (process.env.device !== DEVICES.RASPBERRY) {
+    if (process.env.DEVICE_NAME !== DEVICES.RASPBERRY) {
       console.debug(
         "[PowerService] PC output send",
         PowerService.dataParse(this.data)
