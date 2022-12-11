@@ -22,9 +22,17 @@ type WifiSource = {
 export class PowerService {
   private chatId: string | undefined = process.env.TELEGRAM_CHAT_ID;
 
-  private lastMessage: { message_id: number; text: string };
+  private lastMessage: { message_id: number | undefined; text: string } = {
+    message_id: undefined,
+    text: "",
+  };
 
-  private data: WifiSource;
+  private data: WifiSource = {
+    device: process.env.DEVICE_NAME,
+    bootTime: new Date(),
+    lastOnline: new Date(),
+    ip: "",
+  };
 
   private bootTime: Date = new Date();
 
