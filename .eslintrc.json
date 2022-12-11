@@ -5,6 +5,7 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
+    "./node_modules/gts",
     "prettier"
   ]
 }

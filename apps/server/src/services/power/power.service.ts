@@ -4,10 +4,14 @@ import { InjectBot } from "nestjs-telegraf";
 import { Telegraf } from "telegraf";
 import { Context as TelegrafContext } from "telegraf/typings/context.js";
 import WifiCore from "node-wifi";
+import * as process from "process";
+import { formatDuration, intervalToDuration } from "date-fns";
+import { DEVICES } from "../../consts/devices";
 
 type WifiSource = {
   device: string | undefined;
-  lastOnline: string;
+  bootTime: Date;
+  lastOnline: Date;
   ip: string;
   wifiNameSsid?: string;
   mac?: string;
@@ -21,6 +25,8 @@ export class PowerService {
   private lastMessage: { message_id: number; text: string };
 
   private data: WifiSource;
+
+  private bootTime: Date = new Date();
 
   private wifi = WifiCore;
 
@@ -36,7 +42,11 @@ export class PowerService {
 
   private static dataParse(data: WifiSource): string {
     return [
-      `Last online: ${data.lastOnline}`,
+      `Boot time: ${data.bootTime.toLocaleString()}`,
+      `Last online: ${data.lastOnline.toLocaleString()}`,
+      `Online duration: ${formatDuration(
+        intervalToDuration({ start: data.bootTime, end: data.lastOnline })
+      )}`,
       `Device: ${data.device}`,
       `WIFI: ${data.wifiNameSsid}`,
       `IP: ${data.ip}`,
@@ -47,11 +57,10 @@ export class PowerService {
     console.debug("[PowerService] check", {});
     const ifConfig = this.getIfConfig();
 
-    const macRegex = /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/;
-
     const dataSource: WifiSource = {
       device: process.env.DEVICE_NAME,
-      lastOnline: new Date().toLocaleString(),
+      bootTime: this.bootTime,
+      lastOnline: new Date(),
       ip: JSON.stringify(ifConfig),
       wifiNameSsid: "",
       mac: "",
@@ -63,8 +72,10 @@ export class PowerService {
           console.error(error);
           return;
         }
-        dataSource.wifiNameSsid = currentConnections[0]?.ssid + " | " + currentConnections[0]?.bssid;
-        dataSource.mac = currentConnections[0]?.mac + " | " + currentConnections[0]?.mode;
+        dataSource.wifiNameSsid =
+          currentConnections[0]?.ssid + " | " + currentConnections[0]?.bssid;
+        dataSource.mac =
+          currentConnections[0]?.mac + " | " + currentConnections[0]?.mode;
         dataSource.rest = currentConnections;
         console.debug("[PowerService] wifi getCurrentConnections", {
           currentConnections,
@@ -75,6 +86,13 @@ export class PowerService {
 
     this.data = dataSource;
 
+    if (process.env.device !== DEVICES.RASPBERRY) {
+      console.debug(
+        "[PowerService] PC output send",
+        PowerService.dataParse(this.data)
+      );
+      return;
+    }
     if (this.lastMessage?.message_id) {
       await this.updateLastMessage(this.lastMessage.message_id);
     } else {
