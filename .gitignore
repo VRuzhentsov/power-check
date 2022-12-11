@@ -4,4 +4,6 @@ dist
 
 .env
 
+.yarn
+
 yarn-error.log
