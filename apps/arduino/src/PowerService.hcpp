@@ -1,0 +1,14 @@
+#ifndef ARDUINO_POWERSERVICE_H
+#define ARDUINO_POWERSERVICE_H
+
+
+class PowerService {
+    public:
+        void check()
+        {
+            Serial.println("[PowerService] check");
+        }
+};
+
+
+#endif //ARDUINO_POWERSERVICE_H

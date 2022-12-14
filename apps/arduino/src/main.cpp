@@ -1,4 +1,7 @@
 #include "Arduino.h"
+#define _TASK_SLEEP_ON_IDLE_RUN
+#include <TaskScheduler.h>
+#include <PowerService.hcpp>
 #ifdef ESP32
     #include <WiFi.h>
 #else
@@ -22,6 +25,8 @@ const char* password = WIFI_PASS;
 #define BOTtoken STR(TELEGRAM_TOKEN)  // your Bot Token (Get from Botfather)
 #define CHAT_ID STR(TELEGRAM_CHAT_ID)
 
+Scheduler runner;
+
 #ifdef ESP8266
     X509List cert(TELEGRAM_CERTIFICATE_ROOT);
 #endif
@@ -32,6 +37,12 @@ UniversalTelegramBot bot(BOTtoken, client);
 // Checks for new messages every 1 second.
 int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
+
+PowerService* powerService;
+
+void power_service_check_wrapper() { powerService->check(); }
+
+Task t1(1000 * 60, TASK_FOREVER, &power_service_check_wrapper, &runner, true);  //adding task to the chain on creation
 
 const int ledPin = 2;
 bool ledState = LOW;
@@ -45,13 +56,8 @@ void blinkOnce()
     delay(1000);
 }
 
-void setup()
+void wifiConnect()
 {
-    Serial.begin(9600);
-    // initialize LED digital pin as an output.
-    pinMode(ledPin, OUTPUT);
-    digitalWrite(ledPin, HIGH);
-
     #ifdef ESP8266
         configTime(0, 0, "pool.ntp.org");      // get UTC time via NTP
         client.setTrustAnchors(&cert); // Add root certificate for api.telegram.org
@@ -66,11 +72,24 @@ void setup()
     }
 
     Serial.println(WiFi.localIP());
+}
+
+void setup()
+{
+    Serial.begin(9600);
+    // initialize LED digital pin as an output.
+    pinMode(ledPin, OUTPUT);
+    digitalWrite(ledPin, HIGH);
+
+    wifiConnect();
     blinkOnce();
+
+    runner.startNow();  // set point-in-time for scheduling start
 }
 
 void loop()
 {
+    runner.execute();
 //    Serial.println("[main] loop");
 //    blinkOnce();
 }
