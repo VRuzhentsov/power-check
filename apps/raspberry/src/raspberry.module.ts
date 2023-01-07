@@ -1,6 +1,6 @@
 import {Module} from '@nestjs/common';
-import {ServerController} from './server.controller';
-import {ServerService} from './server.service';
+import {RaspberryController} from './raspberry.controller.js';
+import {RaspberryService} from './raspberry.service.js';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {TelegrafModule} from 'nestjs-telegraf';
 import {ScheduleModule} from '@nestjs/schedule';
@@ -16,7 +16,7 @@ import {PowerService} from './services/power/power.service';
     }),
     ScheduleModule.forRoot(),
   ],
-  controllers: [ServerController],
-  providers: [ServerService, WarmupService, TasksService, PowerService],
+  controllers: [RaspberryController],
+  providers: [RaspberryService, WarmupService, TasksService, PowerService],
 })
-export class ServerModule {}
+export class RaspberryModule {}
