@@ -1,10 +1,10 @@
 {
   "monorepo": true,
-  "root": "apps/server",
-  "sourceRoot": "apps/server/src",
+  "root": "apps/raspberry",
+  "sourceRoot": "apps/raspberry/src",
   "compilerOptions": {
     "webpack": true,
-    "tsConfigPath": "apps/server/tsconfig.app.json"
+    "tsConfigPath": "apps/raspberry/tsconfig.app.json"
   },
   "projects": {
     "client": {
@@ -16,13 +16,13 @@
         "tsConfigPath": "apps/client/tsconfig.app.json"
       }
     },
-    "server": {
+    "raspberry": {
       "type": "application",
-      "root": "apps/server",
+      "root": "apps/raspberry",
       "entryFile": "main",
-      "sourceRoot": "apps/server/src",
+      "sourceRoot": "apps/raspberry/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/server/tsconfig.app.json"
+        "tsConfigPath": "apps/raspberry/tsconfig.app.json"
       }
     }
   }
