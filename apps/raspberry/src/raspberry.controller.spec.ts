@@ -1,6 +1,6 @@
 import {Test, TestingModule} from '@nestjs/testing';
-import {RaspberryController} from './raspberry.controller.js';
-import {RaspberryService} from './raspberry.service.js';
+import {RaspberryController} from './raspberry.controller';
+import {RaspberryService} from './raspberry.service';
 
 describe('RaspberryController', () => {
   let raspberryController: RaspberryController;

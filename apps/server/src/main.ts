@@ -1,8 +1,8 @@
 import {NestFactory} from '@nestjs/core';
-import {RaspberryModule} from './raspberry.module';
+import {ServerModule} from './server.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(RaspberryModule);
+  const app = await NestFactory.create(ServerModule);
   await app.listen(3000);
 }
 bootstrap();

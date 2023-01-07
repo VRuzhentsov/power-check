@@ -2,7 +2,7 @@ import {Injectable} from '@nestjs/common';
 import {networkInterfaces} from 'os';
 import {InjectBot} from 'nestjs-telegraf';
 import {Telegraf} from 'telegraf';
-import {Context as TelegrafContext} from 'telegraf/typings/context.js';
+import {Context as TelegrafContext} from 'telegraf/typings/context';
 import WifiCore from 'node-wifi';
 import * as process from 'process';
 import {formatDuration, intervalToDuration} from 'date-fns';

@@ -1,6 +1,6 @@
 import {Module} from '@nestjs/common';
-import {RaspberryController} from './raspberry.controller.js';
-import {RaspberryService} from './raspberry.service.js';
+import {RaspberryController} from './raspberry.controller';
+import {RaspberryService} from './raspberry.service';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {TelegrafModule} from 'nestjs-telegraf';
 import {ScheduleModule} from '@nestjs/schedule';

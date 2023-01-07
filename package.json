@@ -1,5 +1,5 @@
 {
-  "name": "raspberry",
+  "name": "power-home",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -7,8 +7,10 @@
   "license": "UNLICENSED",
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "nest build server",
-    "format": "prettier --write \\\\\\\"../server/src/**/*.ts\\\\\\\" \\\\\\\"server/test/**/*.ts\\\\\\\"",
+    "build:server": "nest build server",
+    "build:raspberry": "nest build raspberry",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "start:raspberry": "nest start raspberry",
     "start:server": "nest start server",
     "start:server:dev": "nest start server --watch",
     "start:server:debug": "nest start --debug --watch",
@@ -18,7 +20,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config test/jest-e2e.json",
+    "test:e2e": "jest --config apps/server/test/jest-e2e.json",
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
@@ -55,6 +57,7 @@
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.0.1",
     "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "gts": "^3.1.1",
@@ -74,7 +77,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -82,8 +85,11 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/apps/"
+    ]
   },
   "engines": {
     "node": "^18",
