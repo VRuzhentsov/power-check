@@ -1,12 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import { networkInterfaces } from "os";
-import { InjectBot } from "nestjs-telegraf";
-import { Telegraf } from "telegraf";
-import { Context as TelegrafContext } from "telegraf/typings/context.js";
-import WifiCore from "node-wifi";
-import * as process from "process";
-import { formatDuration, intervalToDuration } from "date-fns";
-import { DEVICES } from "../../consts/devices";
+import {Injectable} from '@nestjs/common';
+import {networkInterfaces} from 'os';
+import {InjectBot} from 'nestjs-telegraf';
+import {Telegraf} from 'telegraf';
+import {Context as TelegrafContext} from 'telegraf/typings/context.js';
+import WifiCore from 'node-wifi';
+import * as process from 'process';
+import {formatDuration, intervalToDuration} from 'date-fns';
+import {DEVICES} from '../../consts/devices';
 
 type WifiSource = {
   device: string | undefined;
@@ -22,16 +22,16 @@ type WifiSource = {
 export class PowerService {
   private chatId: string | undefined = process.env.TELEGRAM_CHAT_ID;
 
-  private lastMessage: { message_id: number | undefined; text: string } = {
+  private lastMessage: {message_id: number | undefined; text: string} = {
     message_id: undefined,
-    text: "",
+    text: '',
   };
 
   private data: WifiSource = {
     device: process.env.DEVICE_NAME,
     bootTime: new Date(),
     lastOnline: new Date(),
-    ip: "",
+    ip: '',
   };
 
   private bootTime: Date = new Date();
@@ -53,16 +53,16 @@ export class PowerService {
       `Boot time: ${data.bootTime.toLocaleString()}`,
       `Last online: ${data.lastOnline.toLocaleString()}`,
       `Online duration: ${formatDuration(
-        intervalToDuration({ start: data.bootTime, end: data.lastOnline })
+        intervalToDuration({start: data.bootTime, end: data.lastOnline})
       )}`,
       `Device: ${data.device}`,
       `WIFI: ${data.wifiNameSsid}`,
       `IP: ${data.ip}`,
-    ].join("\n");
+    ].join('\n');
   }
 
   async check() {
-    console.debug("[PowerService] check", {});
+    console.debug('[PowerService] check', {});
     const ifConfig = this.getIfConfig();
 
     const dataSource: WifiSource = {
@@ -70,22 +70,22 @@ export class PowerService {
       bootTime: this.bootTime,
       lastOnline: new Date(),
       ip: JSON.stringify(ifConfig),
-      wifiNameSsid: "",
-      mac: "",
+      wifiNameSsid: '',
+      mac: '',
     };
 
-    await new Promise((resolve) => {
+    await new Promise(resolve => {
       this.wifi.getCurrentConnections((error, currentConnections) => {
         if (error) {
           console.error(error);
           return;
         }
         dataSource.wifiNameSsid =
-          currentConnections[0]?.ssid + " | " + currentConnections[0]?.bssid;
+          currentConnections[0]?.ssid + ' | ' + currentConnections[0]?.bssid;
         dataSource.mac =
-          currentConnections[0]?.mac + " | " + currentConnections[0]?.mode;
+          currentConnections[0]?.mac + ' | ' + currentConnections[0]?.mode;
         dataSource.rest = currentConnections;
-        console.debug("[PowerService] wifi getCurrentConnections", {
+        console.debug('[PowerService] wifi getCurrentConnections', {
           currentConnections,
         });
         resolve(true);
@@ -96,7 +96,7 @@ export class PowerService {
 
     if (process.env.DEVICE_NAME !== DEVICES.RASPBERRY) {
       console.debug(
-        "[PowerService] PC output send",
+        '[PowerService] PC output send',
         PowerService.dataParse(this.data)
       );
       return;
@@ -110,7 +110,7 @@ export class PowerService {
 
   getIfConfig(): object {
     const nets = networkInterfaces();
-    type ResultType = { [r: string]: string[] };
+    type ResultType = {[r: string]: string[]};
     // const results = Object.create(null); // Or just '{}', an empty object
     const results: ResultType = {}; // Or just '{}', an empty object
 
@@ -120,7 +120,7 @@ export class PowerService {
       for (const net of net1) {
         // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
         // 'IPv4' is in Node <= 17, from 18 it's a number 4 or 6
-        const familyV4Value = typeof net.family === "string" ? "IPv4" : 4;
+        const familyV4Value = typeof net.family === 'string' ? 'IPv4' : 4;
         if (net.family === familyV4Value && !net.internal) {
           if (!results[name]) {
             results[name] = [];
@@ -137,16 +137,16 @@ export class PowerService {
   async sendToTelegram(data: WifiSource) {
     if (!this.chatId) return;
     const msg = await this.bot.telegram.sendMessage(
-      this.chatId || "",
+      this.chatId || '',
       PowerService.dataParse(data),
-      { disable_notification: true }
+      {disable_notification: true}
     );
-    console.debug("[PowerService] sendToTelegram", { data });
+    console.debug('[PowerService] sendToTelegram', {data});
     this.lastMessage = msg;
   }
 
   async updateLastMessage(messageId: number) {
-    console.debug("[PowerService] updateLastMessage", { messageId });
+    console.debug('[PowerService] updateLastMessage', {messageId});
     const text = PowerService.dataParse(this.data);
     if (text === this.lastMessage.text) return;
     await this.bot.telegram.editMessageText(
