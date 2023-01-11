@@ -10,15 +10,19 @@ export class LoggerService {
     this.logger = pino();
   }
 
-  log(payload: ILoggerPayload) {
-    this.logger.debug(payload.message, {...payload});
+  log(message: string, payload?: ILoggerPayload) {
+    this.info(message, {...payload});
   }
 
-  debug(payload: ILoggerPayload) {
-    this.logger.debug(payload.message, {...payload});
+  info(message: string, payload?: ILoggerPayload) {
+    this.logger.info(message, {...payload});
   }
 
-  error(payload: ILoggerErrorPayload) {
-    this.logger.error(payload.message, payload.trace, {...payload});
+  debug(message: string, payload?: ILoggerPayload) {
+    this.logger.debug(message, {...payload});
+  }
+
+  error(message: string, payload?: ILoggerErrorPayload) {
+    this.logger.error(message, {...payload});
   }
 }

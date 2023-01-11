@@ -1,5 +1,5 @@
 export interface ILoggerPayload {
-  message: string;
+  message?: string;
   [x: string | number | symbol]: unknown;
 }
 
