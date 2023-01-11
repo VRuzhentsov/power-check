@@ -1,14 +1,20 @@
 #include "Arduino.h"
 #define _TASK_SLEEP_ON_IDLE_RUN
+#define _TASK_LTS_POINTER
+#define _TASK_STD_FUNCTION
+#define _TASK_WDT_IDS
+
+
 #include <TaskScheduler.h>
 #include <PowerService.hcpp>
+#include <iostream>
+#include <functional>
+#include <utility>
 #ifdef ESP32
     #include <WiFi.h>
 #else
     #include <ESP8266WiFi.h>
 #endif
-#include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
 #include <ArduinoJson.h>
 
 #define ST(x) #x
@@ -25,7 +31,7 @@ const char* password = WIFI_PASS;
 #define BOTtoken STR(TELEGRAM_TOKEN)  // your Bot Token (Get from Botfather)
 #define CHAT_ID STR(TELEGRAM_CHAT_ID)
 
-Scheduler runner;
+Scheduler ts;
 
 #ifdef ESP8266
     X509List cert(TELEGRAM_CERTIFICATE_ROOT);
@@ -38,21 +44,87 @@ UniversalTelegramBot bot(BOTtoken, client);
 int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
 
-PowerService* powerService;
+void MainLoop(); // Need GC? https://github.com/arkhipenko/TaskScheduler/blob/master/examples/Scheduler_example19_Dynamic_Tasks/Scheduler_example19_Dynamic_Tasks.ino
 
-void power_service_check_wrapper() { powerService->check(); }
+Task tMain(100 * TASK_MILLISECOND, 100, &MainLoop, &ts, true);
 
-Task t1(1000 * 60, TASK_FOREVER, &power_service_check_wrapper, &runner, true);  //adding task to the chain on creation
-
-const int ledPin = 2;
+const int LED_PIN = 2;
 bool ledState = LOW;
+
+typedef void (*FuncPtr)();
+// Define the function object class
+class FuncObject
+{
+public:
+    // Constructor that stores the lambda function
+    FuncObject(std::function<void()> f) : f_(std::move(f)) {}
+
+    // Overload the function call operator
+    void operator()()
+    {
+        // Call the stored lambda function
+        f_();
+    }
+
+private:
+    std::function<void()> f_;
+};
+//
+//template <typename F>
+//FuncPtr toFuncPtr(F&& f)
+//{
+//    return f;
+//}
+
+//struct FuncObject
+//{
+//    template <typename F>
+//    FuncObject(F&& f) : func(f) {}
+//
+//    void operator()() const
+//    {
+//        func();
+//    }
+//
+//    std::function<void()> func;
+//};
+
+
+void MainLoop() {
+    Serial.print(millis()); Serial.print("\t");
+    Serial.print("MainLoop run: ");
+    int i = tMain.getRunCounter();
+    Serial.print(i); Serial.print(F(".\t"));
+
+    PowerService powerService(STR(TELEGRAM_CHAT_ID), bot);
+    auto power_service_check_wrapper = [&]() -> void { powerService.check(); };
+
+//    FuncObject func(power_service_check_wrapper);
+
+    std::function<void()> func(power_service_check_wrapper);
+//    const FuncPtr& func = toFuncPtr(power_service_check_wrapper);
+//    FuncPtr func = &power_service_check_wrapper;
+//    FuncPtr func = power_service_check_wrapper;
+//    FuncPtr func = toFuncPtr(power_service_check_wrapper);
+//    const FuncPtr& func = toFuncPtr(power_service_check_wrapper);
+//    FuncObject func(power_service_check_wrapper);
+//    FuncType func = power_service_check_wrapper;
+//    FuncObject func(power_service_check_wrapper);
+
+
+    Task *t = new Task(1000 * 60, TASK_FOREVER, func, &ts, true);
+
+    Serial.print(F("Generated a new task:\t")); Serial.print(t->getId()); Serial.print(F("\tInt, Iter = \t"));
+
+    t->enable();
+}
 
 void blinkOnce()
 {
     // nodemcu - led pin is inverted
-    digitalWrite(ledPin, LOW);
+    digitalWrite(LED_PIN, LOW);
     delay(1000);
-    digitalWrite(ledPin, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     delay(1000);
 }
 
@@ -78,18 +150,18 @@ void setup()
 {
     Serial.begin(9600);
     // initialize LED digital pin as an output.
-    pinMode(ledPin, OUTPUT);
-    digitalWrite(ledPin, HIGH);
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
 
     wifiConnect();
     blinkOnce();
 
-    runner.startNow();  // set point-in-time for scheduling start
+    ts.startNow();  // set point-in-time for scheduling start
 }
 
 void loop()
 {
-    runner.execute();
+    ts.execute();
 //    Serial.println("[main] loop");
 //    blinkOnce();
 }
