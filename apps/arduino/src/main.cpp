@@ -3,18 +3,15 @@
 #define _TASK_LTS_POINTER
 #define _TASK_STD_FUNCTION
 #define _TASK_WDT_IDS
-
+#include "time.h"
 
 #include <TaskScheduler.h>
-#include <PowerService.hcpp>
-#include <iostream>
-#include <functional>
-#include <utility>
 #ifdef ESP32
     #include <WiFi.h>
 #else
     #include <ESP8266WiFi.h>
 #endif
+#include <WiFiUdp.h>
 #include <ArduinoJson.h>
 
 #define ST(x) #x
@@ -28,95 +25,33 @@
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASS;
 
-#define BOTtoken STR(TELEGRAM_TOKEN)  // your Bot Token (Get from Botfather)
-#define CHAT_ID STR(TELEGRAM_CHAT_ID)
-
 Scheduler ts;
-
-#ifdef ESP8266
-    X509List cert(TELEGRAM_CERTIFICATE_ROOT);
-#endif
-
+WiFiUDP Udp;
 WiFiClientSecure client;
-UniversalTelegramBot bot(BOTtoken, client);
+IPAddress serverIP = IPAddress(192, 168, 0, 182);
+unsigned int serverPort = 41234;
+unsigned long timestamp = millis();
 
 // Checks for new messages every 1 second.
 int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
 
-void MainLoop(); // Need GC? https://github.com/arkhipenko/TaskScheduler/blob/master/examples/Scheduler_example19_Dynamic_Tasks/Scheduler_example19_Dynamic_Tasks.ino
+void reportOnline(); // Need GC? https://github.com/arkhipenko/TaskScheduler/blob/master/examples/Scheduler_example19_Dynamic_Tasks/Scheduler_example19_Dynamic_Tasks.ino
 
-Task tMain(100 * TASK_MILLISECOND, 100, &MainLoop, &ts, true);
+Task tMain(1000 * TASK_MILLISECOND, TASK_FOREVER, &reportOnline, &ts, true);
 
 const int LED_PIN = 2;
 bool ledState = LOW;
 
-typedef void (*FuncPtr)();
-// Define the function object class
-class FuncObject
-{
-public:
-    // Constructor that stores the lambda function
-    FuncObject(std::function<void()> f) : f_(std::move(f)) {}
-
-    // Overload the function call operator
-    void operator()()
-    {
-        // Call the stored lambda function
-        f_();
-    }
-
-private:
-    std::function<void()> f_;
-};
-//
-//template <typename F>
-//FuncPtr toFuncPtr(F&& f)
-//{
-//    return f;
-//}
-
-//struct FuncObject
-//{
-//    template <typename F>
-//    FuncObject(F&& f) : func(f) {}
-//
-//    void operator()() const
-//    {
-//        func();
-//    }
-//
-//    std::function<void()> func;
-//};
-
-
-void MainLoop() {
-    Serial.print(millis()); Serial.print("\t");
-    Serial.print("MainLoop run: ");
-    int i = tMain.getRunCounter();
-    Serial.print(i); Serial.print(F(".\t"));
-
-    PowerService powerService(STR(TELEGRAM_CHAT_ID), bot);
-    auto power_service_check_wrapper = [&]() -> void { powerService.check(); };
-
-//    FuncObject func(power_service_check_wrapper);
-
-    std::function<void()> func(power_service_check_wrapper);
-//    const FuncPtr& func = toFuncPtr(power_service_check_wrapper);
-//    FuncPtr func = &power_service_check_wrapper;
-//    FuncPtr func = power_service_check_wrapper;
-//    FuncPtr func = toFuncPtr(power_service_check_wrapper);
-//    const FuncPtr& func = toFuncPtr(power_service_check_wrapper);
-//    FuncObject func(power_service_check_wrapper);
-//    FuncType func = power_service_check_wrapper;
-//    FuncObject func(power_service_check_wrapper);
-
-
-    Task *t = new Task(1000 * 60, TASK_FOREVER, func, &ts, true);
-
-    Serial.print(F("Generated a new task:\t")); Serial.print(t->getId()); Serial.print(F("\tInt, Iter = \t"));
-
-    t->enable();
+void reportOnline() {
+    time_t now = time(nullptr);
+    DynamicJsonDocument message(1024);
+    message["status"] = "online";
+    message["deviceId"] = STR(DEVICE_ID);
+    message["timestamp"] = String(now);
+    Udp.beginPacket(serverIP, serverPort);
+    serializeJson(message, Udp);
+    Udp.endPacket();
 }
 
 void blinkOnce()
@@ -132,7 +67,6 @@ void wifiConnect()
 {
     #ifdef ESP8266
         configTime(0, 0, "pool.ntp.org");      // get UTC time via NTP
-        client.setTrustAnchors(&cert); // Add root certificate for api.telegram.org
     #endif
 
     WiFi.mode(WIFI_STA);
@@ -162,6 +96,4 @@ void setup()
 void loop()
 {
     ts.execute();
-//    Serial.println("[main] loop");
-//    blinkOnce();
 }

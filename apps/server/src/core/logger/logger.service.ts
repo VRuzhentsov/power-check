@@ -11,18 +11,18 @@ export class LoggerService {
   }
 
   log(message: string, payload?: ILoggerPayload) {
-    this.info(message, {...payload});
+    this.info(message, payload);
   }
 
   info(message: string, payload?: ILoggerPayload) {
-    this.logger.info(message, {...payload});
+    this.logger.info({...payload}, message);
   }
 
   debug(message: string, payload?: ILoggerPayload) {
-    this.logger.debug(message, {...payload});
+    this.logger.debug({...payload}, message);
   }
 
   error(message: string, payload?: ILoggerErrorPayload) {
-    this.logger.error(message, {...payload});
+    this.logger.error({...payload}, message);
   }
 }
