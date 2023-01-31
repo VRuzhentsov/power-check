@@ -28,8 +28,14 @@ const char* password = WIFI_PASS;
 Scheduler ts;
 WiFiUDP Udp;
 WiFiClientSecure client;
-IPAddress serverIP = IPAddress(192, 168, 0, 182);
+
+#ifndef SERVER_IP
+    #define SERVER_IP STR(SERVER_IP)
+#endif
+IPAddress serverIP = IPAddress().fromString(SERVER_IP);
+
 unsigned int serverPort = 41234;
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet,
 unsigned long timestamp = millis();
 
 // Checks for new messages every 1 second.
@@ -37,19 +43,53 @@ int botRequestDelay = 1000;
 unsigned long lastTimeBotRan;
 
 void reportOnline(); // Need GC? https://github.com/arkhipenko/TaskScheduler/blob/master/examples/Scheduler_example19_Dynamic_Tasks/Scheduler_example19_Dynamic_Tasks.ino
+void scanLocalNetworkForServerPort();
 
-Task tMain(1000 * TASK_MILLISECOND, TASK_FOREVER, &reportOnline, &ts, true);
+Task tMain(TASK_SECOND, TASK_FOREVER, &reportOnline, &ts, true);
+Task tScan(5 * TASK_SECOND, TASK_FOREVER, &scanLocalNetworkForServerPort, &ts, true);
 
 const int LED_PIN = 2;
 bool ledState = LOW;
 
+void scanLocalNetworkForServerPort() {
+    if(serverIP.isSet()) return;
+    IPAddress broadcastAddress = INADDR_NONE;
+    const char *message = "ping-power";
+
+    Udp.beginPacket(broadcastAddress, serverPort);
+    Udp.write(message, strlen(message));
+    Udp.endPacket();
+
+    int packetSize = Udp.parsePacket();
+
+    if (packetSize) {
+        // Read the response into the packet buffer
+        Udp.read(packetBuffer, packetSize);
+        // Check if the response is "pong"
+        if (memcmp(packetBuffer, "pong-power:", 10) == 0) {
+            serverIP = Udp.remoteIP();
+            Serial.println("Server responded with 'pong-power' from: " + serverIP.toString());
+        } else {
+            Serial.println("Unexpected response from server");
+        }
+    } else {
+        Serial.println("Scanning local network for server...");
+    }
+}
+
 void reportOnline() {
+    if(!serverIP.isSet()) return;
+    Serial.println("Reporting online to: " + serverIP.toString());
+    // TODO: scal local network for UDP port 41234
     time_t now = time(nullptr);
     DynamicJsonDocument message(1024);
     message["status"] = "online";
     message["deviceId"] = STR(DEVICE_ID);
+    message["deviceType"] = STR(DEVICE_TYPE);
     message["timestamp"] = String(now);
+
     Udp.beginPacket(serverIP, serverPort);
+    serializeJson(message, Serial); Serial.println();
     serializeJson(message, Udp);
     Udp.endPacket();
 }
@@ -61,6 +101,11 @@ void blinkOnce()
     delay(1000);
     digitalWrite(LED_PIN, HIGH);
     delay(1000);
+}
+
+void startUdpServer () {
+    Udp.begin(serverPort);
+    Serial.println("Start UDP server on: " + String(Udp.localPort()));
 }
 
 void wifiConnect()
@@ -89,6 +134,15 @@ void setup()
 
     wifiConnect();
     blinkOnce();
+    startUdpServer();
+
+    bool result = serverIP.fromString(SERVER_IP);
+    if (result) {
+        Serial.println("Server IP: " + serverIP.toString());
+    } else {
+        Serial.println("Could not parse string into IP address");
+        scanLocalNetworkForServerPort();
+    }
 
     ts.startNow();  // set point-in-time for scheduling start
 }

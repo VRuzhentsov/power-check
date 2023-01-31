@@ -1,25 +1,53 @@
-import {Inject, Module} from '@nestjs/common';
+import {Inject, Module, OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '../config/config.service';
 import {LoggerService} from './logger/logger.service';
-import {UdpService} from '../udp/udp.service';
+import {UdpService} from '../services/udp/udp.service';
 import {DeviceMessage} from './interfaces';
+import {DeviceController} from './controllers/device.controller';
+import {Device} from '@prisma/client';
+import DeviceRepository from './repositories/device.repository';
+import {PrismaService} from '../services/prisma/prisma.service';
+import HandleDeviceMessageInteractor from './interactors/handle-device-message.interactor';
+import HandleUdpMessageInteractor from './interactors/handle-udp-message.interactor';
 
 @Module({
-  providers: [ConfigService, LoggerService, UdpService],
-  exports: [ConfigService, LoggerService, UdpService],
+  controllers: [DeviceController],
+  providers: [
+    // services
+    ConfigService,
+    LoggerService,
+    UdpService,
+    PrismaService,
+    // repositories
+    DeviceRepository,
+    // interactors
+    HandleUdpMessageInteractor,
+    HandleDeviceMessageInteractor,
+  ],
+  exports: [
+    // services
+    ConfigService,
+    LoggerService,
+    UdpService,
+    PrismaService,
+    // repositories
+    DeviceRepository,
+    // interactors
+    HandleUdpMessageInteractor,
+    HandleDeviceMessageInteractor,
+  ],
 })
-export class CoreModule {
+export class CoreModule implements OnModuleInit {
   constructor(
-    @Inject(UdpService) private readonly udpService: UdpService,
-    @Inject(LoggerService) private readonly logger: LoggerService
+    @Inject(LoggerService) private readonly logger: LoggerService,
+    @Inject(HandleUdpMessageInteractor)
+    private readonly handleUdpMessageInteractor: HandleUdpMessageInteractor
   ) {
     this.logger.log('[CoreModule] created');
+  }
 
-    this.udpService.addListener((msg: Buffer) => {
-      const data: DeviceMessage = JSON.parse(msg.toString());
-      this.logger.log('[CoreModule] udpService message', {
-        data,
-      });
-    });
+  onModuleInit() {
+    this.logger.log('[CoreModule] initialized');
+    this.handleUdpMessageInteractor.execute();
   }
 }

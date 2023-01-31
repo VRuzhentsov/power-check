@@ -1,7 +1,8 @@
-type STATUS_ONLINE = 'online';
-type STATUS_OFFLINE = 'offline';
-export interface DeviceMessage {
+export interface DeviceMessage extends UdpMessage {
   deviceId: string;
+  deviceType: string;
+}
+
+export interface UdpMessage {
   timestamp: string;
-  status: STATUS_ONLINE | STATUS_OFFLINE;
 }
