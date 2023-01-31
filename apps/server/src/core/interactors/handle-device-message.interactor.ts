@@ -12,9 +12,6 @@ export default class HandleDeviceMessageInteractor {
   ) {}
 
   async execute(message: DeviceMessage): Promise<Device> {
-    this.logger.log('[CoreModule] HandleDeviceMessageInteractor execute', {
-      'this.deviceRepository': !!this.deviceRepository,
-    });
     // parse the incoming UDP message to extract the device ID and other information
     const {deviceId, deviceType} = message;
     const deviceData: Device = {

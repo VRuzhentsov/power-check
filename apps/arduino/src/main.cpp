@@ -22,6 +22,10 @@
     #define WIFI_PASS  STR(WIFI_PASS)
 #endif
 
+#ifndef DEVICE_TYPE
+    #define DEVICE_TYPE STR(DEVICE_TYPE)
+#endif
+
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASS;
 
@@ -79,17 +83,14 @@ void scanLocalNetworkForServerPort() {
 
 void reportOnline() {
     if(!serverIP.isSet()) return;
-    Serial.println("Reporting online to: " + serverIP.toString());
-    // TODO: scal local network for UDP port 41234
     time_t now = time(nullptr);
     DynamicJsonDocument message(1024);
     message["status"] = "online";
-    message["deviceId"] = STR(DEVICE_ID);
-    message["deviceType"] = STR(DEVICE_TYPE);
+    message["deviceId"] = DEVICE_ID;
+    message["deviceType"] = DEVICE_TYPE;
     message["timestamp"] = String(now);
 
     Udp.beginPacket(serverIP, serverPort);
-    serializeJson(message, Serial); Serial.println();
     serializeJson(message, Udp);
     Udp.endPacket();
 }
